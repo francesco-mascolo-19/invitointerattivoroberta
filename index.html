@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Invito 18</title>
+
+<style>
+:root{
+  --bg:#050509;
+
+  --white: rgba(255,255,255,.92);
+  --glass: rgba(255,255,255,.06);
+  --stroke: rgba(255,255,255,.45);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background:var(--bg);
+  overflow:hidden;
+  display:grid;
+  place-items:center;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color:white;
+}
+
+/* contenitore unico */
+.stage{
+  position:relative;
+  width:min(520px, 96vw);
+  height:min(920px, 92vh);
+  border-radius:28px;
+  overflow:hidden;
+  background:#000;
+  box-shadow:0 30px 110px rgba(0,0,0,.75);
+}
+
+/* ===== SCENE BASE ===== */
+.scene{
+  position:absolute;
+  inset:0;
+  opacity:0;
+  pointer-events:none;
+  transition: opacity .55s ease, filter .55s ease, transform .55s ease;
+}
+.scene.active{
+  opacity:1;
+  pointer-events:auto;
+}
+
+/* ====== SCENA 1: VIDEO ====== */
+#sceneVideo video{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  background:#000;
+}
+
+#sceneVideo .shade{
+  position:absolute;
+  inset:0;
+  background:linear-gradient(to top, rgba(0,0,0,.55), transparent 40%);
+  pointer-events:none;
+  transition: opacity .3s ease;
+}
+
+#sceneVideo .bottomBar{
+  position:absolute;
+  bottom:30px;
+  left:0; right:0;
+  display:flex;
+  justify-content:center;
+  z-index:3;
+}
+
+/* pulsante */
+.openBtn{
+  padding:10px 22px;
+  border-radius:999px;
+  border:1.5px solid rgba(255,255,255,.9);
+  background:rgba(255,255,255,0.05);
+  backdrop-filter:blur(6px);
+  color:#fff;
+  font-size:15px;
+  font-weight:600;
+  letter-spacing:.3px;
+  cursor:pointer;
+  transition:all .2s ease;
+  animation:floaty 2s ease-in-out infinite;
+}
+.openBtn:hover{ background:rgba(255,255,255,0.12); }
+@keyframes floaty{
+  0%{ transform:translateY(0); }
+  50%{ transform:translateY(-4px); }
+  100%{ transform:translateY(0); }
+}
+.openBtn:active{ transform:scale(.96); }
+
+#sceneVideo.playing .bottomBar{
+  opacity:0;
+  pointer-events:none;
+  transition:.3s ease;
+}
+#sceneVideo.playing .shade{
+  opacity:.3;
+  transition:.3s ease;
+}
+
+/* ====== SCENA 2: INVITO ====== */
+#sceneInvite{
+  opacity:0;
+  pointer-events:none;
+}
+#sceneInvite.active{
+  opacity:1;
+  pointer-events:auto;
+}
+
+/* L’invito (foglio) è la background */
+#sceneInvite .bg{
+  position:absolute;
+  inset:0;
+  background:url("FoglioInvitoModificato.png") center/cover no-repeat;
+
+  /* stato iniziale: "nascosto nella busta" */
+  transform: translateY(42%) scale(.96);
+  filter: blur(2px);
+  clip-path: inset(55% 8% 0 8% round 24px);
+  opacity: 0;
+
+  will-change: transform, clip-path, filter, opacity;
+}
+
+/* quando parte la scena “foglio che esce” */
+.stage.reveal #sceneInvite .bg{
+  animation: cardOut 1.05s cubic-bezier(.2,.9,.2,1) forwards;
+}
+
+/* Pulsanti */
+#sceneInvite .actions{
+  position:absolute;
+  bottom:35px;
+  left:0; right:0;
+  display:flex;
+  justify-content:center;
+  gap:40px;
+  z-index:4;
+
+  /* entrano con fade leggero */
+  opacity:0;
+  transform: translateY(10px);
+}
+.stage.reveal #sceneInvite .actions{
+  animation: actionsIn .55s ease forwards;
+  animation-delay: .65s;
+}
+
+#sceneInvite .action{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  cursor:pointer;
+  text-align:center;
+  text-decoration:none;
+  color:var(--white);
+}
+
+#sceneInvite .circle{
+  width:64px;
+  height:64px;
+  border-radius:50%;
+  border:1.5px solid var(--stroke);
+  background:var(--glass);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:26px;
+  transition:.2s ease;
+}
+#sceneInvite .circle:hover{
+  background:rgba(255,255,255,.12);
+  border-color:white;
+  transform:translateY(-3px);
+}
+
+#sceneInvite .label{
+  font-size:13px;
+  line-height:1.2;
+  opacity:.9;
+}
+
+/* ===== EFFETTO “BUSTA” (bordo che resta sotto) ===== */
+.envelopeEdge{
+  position:absolute;
+  left:0; right:0; bottom:-2px;
+  height:42%;
+  z-index:3;
+  pointer-events:none;
+
+  opacity:0;
+  transform: translateY(18px);
+  background:
+    radial-gradient(900px 240px at 50% 0%, rgba(255,255,255,.10), transparent 55%),
+    linear-gradient(to top, rgba(0,0,0,.85), rgba(0,0,0,.35) 55%, transparent 100%);
+  clip-path: polygon(0 40%, 50% 8%, 100% 40%, 100% 100%, 0 100%);
+  filter: blur(.2px);
+}
+
+.stage.reveal .envelopeEdge{
+  animation: edgeIn .7s ease forwards;
+  animation-delay: .05s;
+}
+
+/* Animazioni chiave */
+@keyframes cardOut{
+  0%{
+    opacity: 0;
+    transform: translateY(48%) scale(.96);
+    filter: blur(2px);
+    clip-path: inset(60% 10% 0 10% round 24px);
+  }
+  45%{
+    opacity: 1;
+  }
+  70%{
+    transform: translateY(6%) scale(1.01);
+    filter: blur(0);
+    clip-path: inset(0% 0% 0% 0% round 0px);
+  }
+  100%{
+    opacity: 1;
+    transform: translateY(0%) scale(1);
+    filter: blur(0);
+    clip-path: inset(0% 0% 0% 0% round 0px);
+  }
+}
+
+@keyframes edgeIn{
+  from{ opacity:0; transform: translateY(18px); }
+  to{ opacity:1; transform: translateY(0); }
+}
+
+@keyframes actionsIn{
+  from{ opacity:0; transform: translateY(10px); }
+  to{ opacity:1; transform: translateY(0); }
+}
+
+/* ===== Modal RSVP ===== */
+dialog{
+  width:min(430px, 92vw);
+  border:none;
+  border-radius:18px;
+  padding:0;
+  background: rgba(10,10,18,.95);
+  color:white;
+  box-shadow: 0 30px 90px rgba(0,0,0,.75);
+}
+dialog::backdrop{
+  background: rgba(0,0,0,.7);
+  backdrop-filter: blur(6px);
+}
+.modal{
+  padding:16px;
+  border:1px solid rgba(255,255,255,.12);
+}
+.modal h3{
+  margin:0 0 8px;
+  font-size:14px;
+  letter-spacing:.8px;
+  text-transform:uppercase;
+}
+.modal p{
+  margin:0;
+  font-size:14px;
+  opacity:.85;
+}
+input{
+  width:100%;
+  margin-top:10px;
+  padding:12px 14px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.06);
+  color:white;
+  outline:none;
+}
+.btnrow{
+  margin-top:12px;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.btnsmall{
+  border-radius:14px;
+  padding:10px 12px;
+  border:1px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.06);
+  color:white;
+  font-weight:600;
+  cursor:pointer;
+}
+.btnsmall:hover{ background:rgba(255,255,255,.12); }
+.toast{
+  margin-top:10px;
+  padding:8px 10px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.06);
+  display:none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="stage" id="stage">
+
+  <!-- SCENA 1: VIDEO -->
+  <section class="scene active" id="sceneVideo">
+    <video id="vid" preload="auto" playsinline webkit-playsinline>
+      <source src="Busta-18anniRoberta.mp4" type="video/mp4">
+    </video>
+
+    <div class="shade"></div>
+
+    <div class="bottomBar">
+      <button class="openBtn" id="openBtn" type="button">Tocca per aprire</button>
+    </div>
+  </section>
+
+  <!-- “bordo busta” per la transizione -->
+  <div class="envelopeEdge" id="envelopeEdge" aria-hidden="true"></div>
+
+  <!-- SCENA 2: INVITO -->
+  <section class="scene" id="sceneInvite" aria-hidden="true">
+    <div class="bg" aria-hidden="true"></div>
+
+    <div class="actions">
+      <!-- MAPS -->
+      <a class="action" id="mapsBtn" target="_blank" rel="noreferrer">
+        <div class="circle">📍</div>
+        <div class="label">Clicca per<br>scoprire il luogo</div>
+      </a>
+
+      <!-- RSVP -->
+      <div class="action" id="rsvpOpen" role="button" tabindex="0">
+        <div class="circle">✔</div>
+        <div class="label">Conferma<br>la tua presenza</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- MODAL RSVP -->
+<dialog id="rsvp">
+  <div class="modal">
+    <h3>Conferma presenza</h3>
+    <p>Scrivi il tuo nome e scegli:</p>
+    <input id="guest" placeholder="Il tuo nome" autocomplete="name">
+
+    <div class="btnrow">
+      <button class="btnsmall" id="yes" type="button">Ci sarò 🥳</button>
+      <button class="btnsmall" id="no" type="button">Non posso 😢</button>
+      <button class="btnsmall" id="close" type="button" style="margin-left:auto">Chiudi</button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+</dialog>
+
+<script>
+/* ===== PERSONALIZZA QUI ===== */
+const INVITO = {
+  mapsUrl: "https://maps.app.goo.gl/fU9mJKhmXCqgRs3u8",
+  whatsappNumber: "393921935803"
+};
+
+/* refs */
+const stage      = document.getElementById("stage");
+const sceneVideo = document.getElementById("sceneVideo");
+const sceneInvite= document.getElementById("sceneInvite");
+
+const vid = document.getElementById("vid");
+const btn = document.getElementById("openBtn");
+
+/* Avvio video fermo */
+vid.pause();
+vid.currentTime = 0;
+
+/* Maps */
+document.getElementById("mapsBtn").href = INVITO.mapsUrl;
+
+/* transizione: “foglio esce dalla busta” */
+function goToInviteWithEnvelopeEffect(){
+  // mostra invito e attiva animazione
+  sceneInvite.classList.add("active");
+  sceneInvite.setAttribute("aria-hidden", "false");
+
+  // avvia animazioni
+  stage.classList.add("reveal");
+
+  // sfuma via la scena video
+  sceneVideo.style.filter = "blur(6px)";
+  sceneVideo.style.transform = "scale(1.03)";
+  sceneVideo.style.opacity = "0";
+  sceneVideo.style.pointerEvents = "none";
+
+  // dopo la transizione, rimuove la scena video per non “pesare”
+  setTimeout(()=>{
+    sceneVideo.style.display = "none";
+  }, 1100);
+}
+
+btn.addEventListener("click", async () => {
+  sceneVideo.classList.add("playing");
+
+  try{
+    vid.muted = true; // metti false se vuoi audio
+    await vid.play();
+  }catch(e){
+    vid.muted = true;
+    vid.play();
+  }
+});
+
+/* Fine video -> scena “foglio che esce” */
+vid.addEventListener("ended", () => {
+  goToInviteWithEnvelopeEffect();
+});
+
+/* ===== RSVP modal + WhatsApp ===== */
+const dlg = document.getElementById("rsvp");
+const toast = document.getElementById("toast");
+const guest = document.getElementById("guest");
+
+const rsvpOpen = document.getElementById("rsvpOpen");
+const closeBtn = document.getElementById("close");
+
+rsvpOpen.addEventListener("click", ()=> dlg.showModal());
+rsvpOpen.addEventListener("keydown", (e)=> { if(e.key === "Enter") dlg.showModal(); });
+
+closeBtn.addEventListener("click", ()=> dlg.close());
+
+function showToast(msg){
+  toast.style.display="block";
+  toast.textContent=msg;
+}
+
+function openWhatsApp(message){
+  const url = `https://wa.me/${INVITO.whatsappNumber}?text=${encodeURIComponent(message)}`;
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
+document.getElementById("yes").addEventListener("click", ()=>{
+  const n = guest.value.trim() || "Ciao!";
+  showToast(`Perfetto ${n}! ✅`);
+  openWhatsApp(`Ciao! Sono ${n} e confermo che CI SARÒ al tuo compleanno 🎉`);
+});
+
+document.getElementById("no").addEventListener("click", ()=>{
+  const n = guest.value.trim() || "Ciao!";
+  showToast(`Ok ${n} 😢`);
+  openWhatsApp(`Ciao! Sono ${n} e purtroppo NON POSSO venire 😢`);
+});
+</script>
+
+</body>
+</html>
